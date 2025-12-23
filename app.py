@@ -1,37 +1,53 @@
 import os
-import uuid
-import functools
-from datetime import datetime, timedelta
+import sys
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash
 from dotenv import load_dotenv
 from supabase import create_client, Client
-from dateutil import parser  # Do parsowania dat z Supabase
 
+# --- KONFIGURACJA ---
 load_dotenv(override=True)
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "fallback_secret_key")
+# Fallback key tylko do testów, żeby app nie wywaliła błędu na starcie przy braku zmiennej
+app.secret_key = os.getenv("SECRET_KEY", "fallback_secret_key") 
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+ADMIN_ID = os.getenv("ADMIN_ID")
 
-# --- DEBUGOWANIE (DODAJ TO) ---
-print(f"DEBUG: URL present: {bool(SUPABASE_URL)}")
-print(f"DEBUG: KEY present: {bool(SUPABASE_KEY)}")
-if SUPABASE_KEY:
-    print(f"DEBUG: KEY start: {SUPABASE_KEY[:5]}...") # Pokaże tylko 5 pierwszych znaków
-    print(f"DEBUG: KEY length: {len(SUPABASE_KEY)}")
-# -----------------------------
+# --- DEBUGOWANIE KRYTYCZNE (DODAJ TO I SPRAWDŹ LOGI RENDERA) ---
+print("-" * 50)
+print(f"DEBUG: Sprawdzanie zmiennych środowiskowych...")
 
-# Walidacja przed próbą połączenia
-if not SUPABASE_URL or not SUPABASE_KEY:
-    print("CRITICAL ERROR: Brak zmiennych środowiskowych Supabase!")
-    # Nie robimy exit, żeby gunicorn nie restartował w pętli, ale aplikacja nie wstanie poprawnie
+if not SUPABASE_KEY:
+    print("❌ BŁĄD: SUPABASE_KEY jest PUSTY (None)!")
 else:
+    print(f"ℹ️  Klucz znaleziony. Długość: {len(SUPABASE_KEY)} znaków.")
+    # Pokaż pierwsze 3 i ostatnie 3 znaki, żeby sprawdzić cudzysłowy i spacje
+    # Używamy znaków > i < żeby zobaczyć spacje
+    print(f"ℹ️  Początek klucza: >{SUPABASE_KEY[:4]}<") 
+    print(f"ℹ️  Koniec klucza:   >{SUPABASE_KEY[-4:]}<")
+
+    if '"' in SUPABASE_KEY or "'" in SUPABASE_KEY:
+        print("🚨 ALARM: Klucz zawiera cudzysłowy! Usuń je w panelu Render!")
+    if " " in SUPABASE_KEY:
+        print("🚨 ALARM: Klucz zawiera spacje! Usuń je w panelu Render!")
+print("-" * 50)
+# -------------------------------------------------------------
+
+# Próba połączenia tylko jeśli klucz istnieje
+if SUPABASE_URL and SUPABASE_KEY:
     try:
-        db: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        # Usuwamy ewentualne białe znaki (strip) na wszelki wypadek
+        clean_key = SUPABASE_KEY.strip().replace('"', '').replace("'", "")
+        db: Client = create_client(SUPABASE_URL, clean_key)
+        print("✅ Klient Supabase zainicjalizowany (format poprawny).")
     except Exception as e:
-        print(f"CRITICAL ERROR przy create_client: {e}")
+        print(f"❌ KRYTYCZNY BŁĄD create_client: {e}")
+        # Nie robimy sys.exit, żeby zobaczyć logi, ale aplikacja nie będzie działać
+else:
+    print("❌ Brak URL lub KEY - aplikacja nie połączy się z bazą.")
 
 # --- KONFIGURACJA ---
 load_dotenv(override=True)
@@ -251,3 +267,4 @@ def verify_license():
 if __name__ == "__main__":
 
     app.run(debug=True, port=5000)
+
