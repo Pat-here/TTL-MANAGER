@@ -2,6 +2,7 @@ import os
 import sys
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash
 from dotenv import load_dotenv
+import functools
 from supabase import create_client, Client
 
 # --- KONFIGURACJA ---
@@ -267,4 +268,5 @@ def verify_license():
 if __name__ == "__main__":
 
     app.run(debug=True, port=5000)
+
 
