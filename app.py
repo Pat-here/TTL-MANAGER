@@ -7,6 +7,32 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 from dateutil import parser  # Do parsowania dat z Supabase
 
+load_dotenv(override=True)
+
+app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY", "fallback_secret_key")
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+# --- DEBUGOWANIE (DODAJ TO) ---
+print(f"DEBUG: URL present: {bool(SUPABASE_URL)}")
+print(f"DEBUG: KEY present: {bool(SUPABASE_KEY)}")
+if SUPABASE_KEY:
+    print(f"DEBUG: KEY start: {SUPABASE_KEY[:5]}...") # Pokaże tylko 5 pierwszych znaków
+    print(f"DEBUG: KEY length: {len(SUPABASE_KEY)}")
+# -----------------------------
+
+# Walidacja przed próbą połączenia
+if not SUPABASE_URL or not SUPABASE_KEY:
+    print("CRITICAL ERROR: Brak zmiennych środowiskowych Supabase!")
+    # Nie robimy exit, żeby gunicorn nie restartował w pętli, ale aplikacja nie wstanie poprawnie
+else:
+    try:
+        db: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    except Exception as e:
+        print(f"CRITICAL ERROR przy create_client: {e}")
+
 # --- KONFIGURACJA ---
 load_dotenv(override=True)
 
@@ -223,4 +249,5 @@ def verify_license():
 
 
 if __name__ == "__main__":
+
     app.run(debug=True, port=5000)
