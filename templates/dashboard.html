@@ -183,7 +183,7 @@
                                 <td class="text-uppercase fw-bold {{ 'text-danger' if log.severity == 'critical' else 'text-warning' }}">
                                     {{ log.severity }}
                                 </td>
-                                <td>{{ log.message }} <br> <small class="text-muted">HWID: {{ log.hwid_attempt }}</small></td>
+                                <td>{{ log.message }} <br> <small class="text-warning">HWID: {{ log.hwid_attempt }}</small></td>
                                 <td>{{ log.ip_address }}</td>
                                 <td class="font-monospace small">{{ log.license_key }}</td>
                             </tr>
@@ -241,4 +241,5 @@
         }
     </script>
 </body>
+
 </html>
