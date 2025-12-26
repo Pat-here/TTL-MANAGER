@@ -231,6 +231,7 @@ def license_action(action_type, id):
 @app.route("/api/verify", methods=["POST"])
 def verify_license():
     # 1. KILL SWITCH CHECK
+    ip = get_real_ip()
     if MAINTENANCE_MODE:
         return jsonify({
             "valid": False, 
@@ -280,4 +281,5 @@ def verify_license():
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
+
 
