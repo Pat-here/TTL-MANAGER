@@ -27,6 +27,17 @@ db: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 MAINTENANCE_MODE = False
 
 # --- POMOCNIKI ---
+
+def get_real_ip():
+    """Pobiera prawdziwe IP użytkownika, nawet jeśli jest za proxy"""
+    if request.headers.getlist("X-Forwarded-For"):
+        # X-Forwarded-For może zawierać listę (np. "IP_KLIENTA, IP_PROXY"). Bierzemy pierwsze.
+        ip = request.headers.getlist("X-Forwarded-For")[0]
+        if ',' in ip:
+            ip = ip.split(',')[0].strip()
+        return ip
+    return request.remote_addr
+
 def login_required(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
@@ -269,3 +280,4 @@ def verify_license():
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
+
