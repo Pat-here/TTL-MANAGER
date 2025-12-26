@@ -6,7 +6,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* CYBER / HACKER THEME */
+        /* --- MOTYW CYBER / GOLD --- */
         :root {
             --bg-color: #050505;
             --panel-bg: #0a0a0a;
@@ -24,12 +24,12 @@
             padding: 20px; 
         }
 
-        /* Karty i kontenery */
+        /* Karty */
         .card { 
             background: var(--panel-bg); 
             border: 1px solid var(--border-color); 
             border-radius: 0;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            box-shadow: 0 0 15px rgba(0,0,0,0.7);
             margin-bottom: 20px;
         }
         
@@ -43,6 +43,23 @@
             margin-bottom: 15px;
         }
 
+        /* Elementy formularzy */
+        .form-control, .form-select {
+            background: #111;
+            border: 1px solid #333;
+            color: var(--gold);
+            border-radius: 0;
+        }
+        .form-control:focus, .form-select:focus {
+            background: #111;
+            color: var(--gold);
+            border-color: var(--gold);
+            box-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
+            outline: none;
+        }
+        /* Placeholder color */
+        ::placeholder { color: #444 !important; opacity: 1; }
+
         /* Przyciski */
         .btn-gold { 
             background: var(--gold); 
@@ -51,28 +68,21 @@
             font-weight: bold; 
             text-transform: uppercase;
             border-radius: 0;
+            transition: 0.2s;
         }
-        .btn-gold:hover { background: var(--gold-dim); color: #000; }
+        .btn-gold:hover { background: var(--gold-dim); color: #000; box-shadow: 0 0 10px var(--gold-dim); }
 
         .btn-outline-gold {
             border: 1px solid var(--gold);
             color: var(--gold);
             background: transparent;
             border-radius: 0;
+            text-transform: uppercase;
         }
         .btn-outline-gold:hover {
             background: var(--gold);
             color: black;
         }
-
-        .btn-danger-glow {
-            background: transparent;
-            border: 1px solid #ff1744;
-            color: #ff1744;
-            box-shadow: 0 0 5px #ff1744;
-            border-radius: 0;
-        }
-        .btn-danger-glow:hover { background: #ff1744; color: white; }
 
         /* Tabele */
         .table-cyber { 
@@ -86,6 +96,7 @@
             border-bottom: 1px solid var(--gold) !important; 
             font-weight: normal;
             letter-spacing: 1px;
+            text-transform: uppercase;
         }
         .table-cyber td {
             border-bottom: 1px solid #222;
@@ -93,7 +104,7 @@
         }
 
         /* Statusy */
-        .status-active { color: #00c853; font-weight: bold; }
+        .status-active { color: #00c853; font-weight: bold; text-shadow: 0 0 5px rgba(0, 200, 83, 0.3); }
         .status-expired { color: #ff9800; }
         .status-banned { color: #ff1744; text-decoration: line-through; }
 
@@ -104,6 +115,7 @@
             border: none;
             border-bottom: 2px solid transparent;
             border-radius: 0;
+            text-transform: uppercase;
         }
         .nav-tabs .nav-link.active { 
             background-color: transparent; 
@@ -112,33 +124,30 @@
         }
         .nav-tabs .nav-link:hover { color: var(--gold); }
 
-        /* Formularze */
-        .form-control, .form-select {
-            background: #111;
-            border: 1px solid #333;
-            color: var(--gold);
-            border-radius: 0;
-        }
-        .form-control:focus, .form-select:focus {
-            background: #111;
-            color: var(--gold);
-            border-color: var(--gold);
-            box-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
-        }
-
-        /* Kill Switch Alert */
+        /* Specjalne elementy */
         .maintenance-alert {
-            border: 2px solid red;
-            background: rgba(255, 0, 0, 0.1);
-            color: red;
+            border: 2px solid #ff1744;
+            background: rgba(255, 23, 68, 0.1);
+            color: #ff1744;
             text-align: center;
             padding: 15px;
             font-weight: bold;
             font-size: 1.2em;
             text-transform: uppercase;
+            letter-spacing: 1px;
             animation: pulse 2s infinite;
         }
-        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
+        @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
+
+        .online-counter { 
+            color: #00c853; 
+            font-weight: bold; 
+            border: 1px solid #00c853; 
+            padding: 4px 10px; 
+            font-size: 0.9em; 
+            box-shadow: 0 0 5px rgba(0, 200, 83, 0.2); 
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -146,13 +155,20 @@
         
         <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-dark pb-3">
             <div>
-                <h1 class="mb-0" style="color: var(--gold); letter-spacing: 3px;">⚡ THUNDERT <span style="font-size:0.5em; color: #555;">MANAGER</span></h1>
-                <small class="text-muted">ADMIN_ID: <span class="text-white">{{ admin_id }}</span></small>
+                <h1 class="mb-0" style="color: var(--gold); letter-spacing: 3px; font-weight: 800;">
+                    ⚡ THUNDERT <span style="font-size:0.5em; color: #555; font-weight: normal;">MANAGER v2.1</span>
+                </h1>
+                <div class="mt-2 d-flex align-items-center gap-3">
+                    <span class="text-muted small">ADMIN_ID: <span class="text-white">{{ admin_id }}</span></span>
+                    <span class="online-counter" title="Unikalne HWID aktywne w ostatnich 5 min">
+                        ● ONLINE: {{ online_count }}
+                    </span>
+                </div>
             </div>
             
             <div class="d-flex gap-2">
-                <a href="/toggle_maintenance" class="btn {{ 'btn-danger' if maintenance else 'btn-outline-secondary' }} btn-sm" 
-                   onclick="return confirm('Czy na pewno chcesz zmienić status PRZERWY TECHNICZNEJ? Jeśli włączysz, nikt nie wejdzie do bota.')">
+                <a href="/toggle_maintenance" class="btn {{ 'btn-danger' if maintenance else 'btn-outline-secondary' }} btn-sm rounded-0" 
+                   onclick="return confirm('⚠️ Czy na pewno chcesz zmienić status PRZERWY TECHNICZNEJ? \n\nJeśli włączysz - nikt nie wejdzie do bota.\nJeśli wyłączysz - boty zaczną działać.')">
                     {{ '⛔ ZAKOŃCZ PRZERWĘ' if maintenance else '🚨 PRZERWA TECHNICZNA' }}
                 </a>
                 
@@ -177,21 +193,39 @@
             {% endif %}
         {% endwith %}
 
-        <div class="card p-3">
-            <div class="card-header-gold">
-                📊 Aktywność Weryfikacji (Ostatnie 12h)
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card p-3">
+                    <div class="card-header-gold">
+                        📊 Aktywność Weryfikacji (Ostatnie 12h)
+                    </div>
+                    <div style="height: 180px; width: 100%;">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
             </div>
-            <div style="height: 200px; width: 100%;">
-                <canvas id="activityChart"></canvas>
+
+            <div class="col-md-4">
+                <div class="card p-3 h-100">
+                    <div class="card-header-gold">📢 Broadcast (MOTD)</div>
+                    <form action="/update_settings" method="POST" class="d-flex flex-column justify-content-between h-100">
+                        <div>
+                            <p class="small text-muted mb-2">Wiadomość wyświetlana użytkownikom po udanym zalogowaniu do bota.</p>
+                            <label class="small text-gold mb-1">TREŚĆ WIADOMOŚCI:</label>
+                            <textarea name="motd" class="form-control" rows="3" style="resize: none;">{{ motd }}</textarea>
+                        </div>
+                        <button type="submit" class="btn btn-outline-gold btn-sm w-100 mt-3">ZAPISZ WIADOMOŚĆ</button>
+                    </form>
+                </div>
             </div>
         </div>
 
         <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
             <li class="nav-item">
-                <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button">LICENCJE</button>
+                <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button">ZARZĄDZANIE KLUCZAMI</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" type="button">LOGI (LIVE)</button>
+                <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" type="button">LOGI SYSTEMOWE</button>
             </li>
         </ul>
 
@@ -204,7 +238,7 @@
                     <form action="/create" method="POST" class="row g-3 align-items-end">
                         <div class="col-md-3">
                             <label class="text-muted small">NOTATKA (Dla kogo?)</label>
-                            <input type="text" name="note" class="form-control" placeholder="np. Klient Discord" required>
+                            <input type="text" name="note" class="form-control" placeholder="np. Klient Discord #4412" required>
                         </div>
                         <div class="col-md-2">
                             <label class="text-muted small">PAKIET</label>
@@ -215,9 +249,10 @@
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label class="text-muted small">CZAS</label>
+                            <label class="text-muted small">CZAS TRWANIA</label>
                             <select name="duration" class="form-select">
-                                <option value="7">7 Dni (Tydzień)</option> <option value="30" selected>30 Dni (Miesiąc)</option>
+                                <option value="7">7 Dni (Tydzień)</option>
+                                <option value="30" selected>30 Dni (Miesiąc)</option>
                                 <option value="90">90 Dni (Kwartał)</option>
                                 <option value="365">1 Rok</option>
                                 <option value="lifetime">LIFETIME</option>
@@ -230,81 +265,87 @@
                 </div>
 
                 <div class="card p-3">
-                    <div class="d-flex justify-content-between mb-3">
+                    <div class="d-flex justify-content-between mb-3 align-items-center">
                         <h5 class="text-white mb-0">BAZA KLUCZY</h5>
-                        <a href="/export_active" class="btn btn-sm btn-outline-light">💾 EKSPORTUJ AKTYWNE (.TXT)</a>
+                        
+                        <div class="d-flex gap-2">
+                            <input type="text" id="searchInput" class="form-control form-control-sm" style="width: 250px; border-color: #444;" placeholder="🔍 Szukaj (Klucz, Notatka)...">
+                            <a href="/export_active" class="btn btn-sm btn-outline-light rounded-0">💾 EKSPORTUJ .TXT</a>
+                        </div>
                     </div>
                     
-                    <table class="table table-cyber table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>KLUCZ</th>
-                                <th>TYP</th>
-                                <th>STATUS</th>
-                                <th>WYGASA</th>
-                                <th>HWID / INFO</th>
-                                <th class="text-end">PANEL</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for lic in licenses %}
-                            <tr style="opacity: {{ '0.5' if lic.is_expired or lic.status == 'banned' else '1' }};">
-                                <td class="font-monospace" style="color: #fff;">{{ lic.license_key }}</td>
-                                <td><span class="badge border border-secondary text-secondary">{{ lic.license_type }}</span></td>
-                                <td>
-                                    {% if lic.status == 'banned' %}
-                                        <span class="status-banned">ZBANOWANY</span>
-                                    {% elif lic.is_expired or lic.status == 'expired' %}
-                                        <span class="status-expired">WYGASŁ</span>
-                                    {% else %}
-                                        <span class="status-active">AKTYWNY</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if lic.expires_at %}
-                                        <span class="{{ 'text-danger' if lic.is_expired else 'text-muted' }}">{{ lic.expires_at[:10] }}</span>
-                                    {% else %}
-                                        <span class="text-gold">∞ LIFETIME</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="small text-muted">{{ lic.hwid[:15] + '...' if lic.hwid else '---' }}</div>
-                                    <div class="small text-white fst-italic">{{ lic.note }}</div>
-                                </td>
-                                <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-primary me-1 rounded-0"
-                                            onclick="openEditModal('{{ lic.id }}', '{{ lic.note }}')">EDYTUJ</button>
+                    <div class="table-responsive">
+                        <table class="table table-cyber table-hover mb-0" id="licensesTable">
+                            <thead>
+                                <tr>
+                                    <th>KLUCZ</th>
+                                    <th>TYP</th>
+                                    <th>STATUS</th>
+                                    <th>WYGASA</th>
+                                    <th>HWID / INFO</th>
+                                    <th class="text-end">PANEL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lic in licenses %}
+                                <tr class="license-row" style="opacity: {{ '0.5' if lic.is_expired or lic.status == 'banned' else '1' }};">
+                                    <td class="font-monospace" style="color: #fff; letter-spacing: 1px;">{{ lic.license_key }}</td>
+                                    <td><span class="badge border border-secondary text-secondary">{{ lic.license_type }}</span></td>
+                                    <td>
+                                        {% if lic.status == 'banned' %}
+                                            <span class="status-banned">ZBANOWANY</span>
+                                        {% elif lic.is_expired or lic.status == 'expired' %}
+                                            <span class="status-expired">WYGASŁ</span>
+                                        {% else %}
+                                            <span class="status-active">AKTYWNY</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if lic.expires_at %}
+                                            <span class="{{ 'text-danger' if lic.is_expired else 'text-muted' }}">{{ lic.expires_at[:10] }}</span>
+                                        {% else %}
+                                            <span class="text-gold">∞ LIFETIME</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="small text-muted font-monospace">{{ lic.hwid[:15] + '...' if lic.hwid else '---' }}</div>
+                                        <div class="small text-gold fst-italic note-text">{{ lic.note }}</div>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-outline-primary me-1 rounded-0"
+                                                onclick="openEditModal('{{ lic.id }}', '{{ lic.note }}')">EDYTUJ</button>
 
-                                    {% if lic.hwid %}
-                                    <form action="/action/reset_hwid/{{ lic.id }}" method="POST" class="d-inline">
-                                        <button class="btn btn-sm btn-outline-info rounded-0" title="Reset HWID">♻</button>
-                                    </form>
-                                    {% endif %}
+                                        {% if lic.hwid %}
+                                        <form action="/action/reset_hwid/{{ lic.id }}" method="POST" class="d-inline">
+                                            <button class="btn btn-sm btn-outline-info rounded-0" title="Reset HWID">♻</button>
+                                        </form>
+                                        {% endif %}
 
-                                    {% if lic.status == 'banned' %}
-                                    <form action="/action/unban/{{ lic.id }}" method="POST" class="d-inline">
-                                        <button class="btn btn-sm btn-outline-success rounded-0">UNBAN</button>
-                                    </form>
-                                    {% else %}
-                                    <form action="/action/ban/{{ lic.id }}" method="POST" class="d-inline">
-                                        <button class="btn btn-sm btn-outline-warning rounded-0">BAN</button>
-                                    </form>
-                                    {% endif %}
+                                        {% if lic.status == 'banned' %}
+                                        <form action="/action/unban/{{ lic.id }}" method="POST" class="d-inline">
+                                            <button class="btn btn-sm btn-outline-success rounded-0">UNBAN</button>
+                                        </form>
+                                        {% else %}
+                                        <form action="/action/ban/{{ lic.id }}" method="POST" class="d-inline">
+                                            <button class="btn btn-sm btn-outline-warning rounded-0">BAN</button>
+                                        </form>
+                                        {% endif %}
 
-                                    <form action="/action/delete/{{ lic.id }}" method="POST" class="d-inline" onsubmit="return confirm('Usunąć?')">
-                                        <button class="btn btn-sm btn-outline-danger rounded-0">X</button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                        <form action="/action/delete/{{ lic.id }}" method="POST" class="d-inline" onsubmit="return confirm('Usunąć?')">
+                                            <button class="btn btn-sm btn-outline-danger rounded-0">X</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
             <div class="tab-pane fade" id="logs">
                 <div class="card p-3">
-                    <div class="card-header-gold text-danger">🚨 SECURITY LOGS (LAST 50)</div>
+                    <div class="card-header-gold text-danger">🚨 OSTATNIE ZDARZENIA (50)</div>
                     <table class="table table-cyber table-sm">
                         <thead>
                             <tr>
@@ -318,13 +359,13 @@
                         <tbody>
                             {% for log in logs %}
                             <tr style="border-left: 3px solid {{ '#ff1744' if log.severity == 'critical' else 'transparent' }}">
-                                <td class="text-muted">{{ log.created_at[11:19] }}</td>
+                                <td class="text-muted font-monospace">{{ log.created_at[11:19] }}</td>
                                 <td class="text-uppercase fw-bold {{ 'text-danger' if log.severity == 'critical' else 'text-warning' }}">
                                     {{ log.severity }}
                                 </td>
-                                <td>{{ log.message }} <br> <small class="text-muted">HWID: {{ log.hwid_attempt }}</small></td>
+                                <td>{{ log.message }} <br> <small class="text-muted font-monospace">HWID: {{ log.hwid_attempt }}</small></td>
                                 <td>
-                                    <span class="ip-address" data-ip="{{ log.ip_address }}">{{ log.ip_address }}</span>
+                                    <span class="ip-address text-white" data-ip="{{ log.ip_address }}">{{ log.ip_address }}</span>
                                     <span class="flag-container ms-2"></span> 
                                 </td>
                                 <td class="font-monospace small text-muted">{{ log.license_key }}</td>
@@ -347,23 +388,27 @@
                 <form action="/edit_license" method="POST">
                     <div class="modal-body">
                         <input type="hidden" name="id" id="edit_id">
+
                         <div class="mb-3">
-                            <label class="form-label text-muted">Notatka</label>
+                            <label class="form-label text-muted">Edytuj Notatkę</label>
                             <input type="text" name="note" id="edit_note" class="form-control">
                         </div>
+
                         <div class="mb-3">
-                            <label class="form-label text-muted">Przedłuż o...</label>
+                            <label class="form-label text-muted">Przedłuż ważność o...</label>
                             <select name="extend_days" class="form-select">
                                 <option value="0" selected>Nie zmieniaj daty</option>
                                 <option value="7">+7 Dni</option>
                                 <option value="30">+30 Dni</option>
+                                <option value="90">+90 Dni</option>
                                 <option value="365">+1 Rok</option>
                             </select>
+                            <small class="text-muted">Czas zostanie dodany do obecnej daty wygaśnięcia.</small>
                         </div>
                     </div>
                     <div class="modal-footer border-secondary">
                         <button type="button" class="btn btn-secondary rounded-0" data-bs-dismiss="modal">ANULUJ</button>
-                        <button type="submit" class="btn btn-gold rounded-0">ZAPISZ</button>
+                        <button type="submit" class="btn btn-gold rounded-0">ZAPISZ ZMIANY</button>
                     </div>
                 </form>
             </div>
@@ -414,36 +459,50 @@
     </script>
 
     <script>
+        // 1. Obsługa Modala Edycji
         function openEditModal(id, note) {
             document.getElementById('edit_id').value = id;
             document.getElementById('edit_note').value = note;
             var myModal = new bootstrap.Modal(document.getElementById('editModal'));
             myModal.show();
         }
-    </script>
 
-    <script>
+        // 2. Geolokalizacja (Flagi w logach)
         document.addEventListener("DOMContentLoaded", function() {
             const ipElements = document.querySelectorAll('.ip-address');
-            // Limitujemy do 15, żeby nie zablokować API darmowego
+            // Limit do 15 zapytań naraz, żeby nie zablokować darmowego API
             const limit = Math.min(ipElements.length, 15);
 
             for (let i = 0; i < limit; i++) {
                 const el = ipElements[i];
                 const ip = el.getAttribute('data-ip');
+                
+                // Ignorujemy localhost
                 if(ip && ip !== '127.0.0.1') {
                     fetch(`https://ipapi.co/${ip}/json/`)
                         .then(response => response.json())
                         .then(data => {
                             if(data.country_code) {
                                 const flagUrl = `https://flagcdn.com/16x12/${data.country_code.toLowerCase()}.png`;
-                                const flagImg = `<img src="${flagUrl}" title="${data.country_name}">`;
+                                const flagImg = `<img src="${flagUrl}" title="${data.country_name}" style="vertical-align: middle;">`;
                                 el.nextElementSibling.innerHTML = flagImg;
                             }
                         })
                         .catch(err => console.log('Geo error', err));
                 }
             }
+        });
+
+        // 3. Live Search (Wyszukiwarka w czasie rzeczywistym)
+        document.getElementById('searchInput').addEventListener('keyup', function() {
+            let filter = this.value.toUpperCase();
+            let rows = document.querySelectorAll('#licensesTable tbody tr');
+            
+            rows.forEach(row => {
+                let text = row.innerText.toUpperCase();
+                // Jeśli tekst wiersza zawiera frazę -> pokaż, w przeciwnym razie -> ukryj
+                row.style.display = text.indexOf(filter) > -1 ? "" : "none";
+            });
         });
     </script>
 </body>
