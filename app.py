@@ -1,9 +1,10 @@
 import os
-import sys
 import uuid
 import functools
-from datetime import datetime, timedelta  # <--- TEGO BRAKOWAŁO
-from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash
+import json
+from datetime import datetime, timedelta
+from collections import Counter
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash, Response
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from dateutil import parser
@@ -19,22 +20,13 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 ADMIN_ID = os.getenv("ADMIN_ID")
 
-# Inicjalizacja klienta Supabase
-try:
-    if not SUPABASE_URL or not SUPABASE_KEY:
-        raise ValueError("Brak zmiennych środowiskowych SUPABASE")
-    
-    # Czyszczenie klucza z ewentualnych spacji/znaków
-    clean_key = SUPABASE_KEY.strip()
-    db: Client = create_client(SUPABASE_URL, clean_key)
-    print("✅ Połączono z Supabase.")
-except Exception as e:
-    print(f"❌ Błąd inicjalizacji bazy: {e}")
-    # Nie przerywamy, żeby gunicorn nie restartował w pętli
-    db = None
+db: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Zmienna globalna dla trybu konserwacji (Kill Switch)
+# Resetuje się po restarcie serwera do False
+MAINTENANCE_MODE = False
 
 # --- POMOCNIKI ---
-
 def login_required(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
@@ -45,7 +37,6 @@ def login_required(f):
 
 def log_security_event(key, ip, hwid, msg, severity="info"):
     """Zapisuje zdarzenie w tabeli access_logs"""
-    if not db: return
     try:
         db.table("access_logs").insert({
             "license_key": key,
@@ -55,19 +46,16 @@ def log_security_event(key, ip, hwid, msg, severity="info"):
             "severity": severity
         }).execute()
     except Exception as e:
-        print(f"Błąd logowania do bazy: {e}")
+        print(f"Błąd logowania: {e}")
 
 # --- ROUTY AUTORYZACJI ---
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        password_input = request.form.get('password')
-        if password_input and password_input == ADMIN_PASSWORD:
+        if request.form.get('password') == ADMIN_PASSWORD:
             session['logged_in'] = True
             return redirect(url_for('index'))
-        else:
-            flash('Błędne hasło.', 'error')
+        flash('Błędne hasło.', 'error')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -75,37 +63,88 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-# --- DASHBOARD ---
+# --- DASHBOARD I ZARZĄDZANIE ---
 
 @app.route("/")
 @login_required
 def index():
-    if not db:
-        return "Błąd połączenia z bazą danych. Sprawdź logi serwera."
-        
-    try:
-        # Pobierz licencje
-        licenses = db.table("licenses").select("*").order("created_at", desc=True).execute().data
-        
-        # Przetwarzanie daty
-        now = datetime.utcnow()
-        for lic in licenses:
-            lic['is_expired'] = False
-            if lic.get('expires_at'):
-                try:
-                    expire_dt = parser.isoparse(lic['expires_at']).replace(tzinfo=None)
-                    if expire_dt < now:
-                        lic['is_expired'] = True
-                except:
-                    pass 
+    # 1. Pobierz licencje
+    licenses = db.table("licenses").select("*").order("created_at", desc=True).execute().data
+    
+    now = datetime.utcnow()
+    for lic in licenses:
+        lic['is_expired'] = False
+        if lic.get('expires_at'):
+            expire_dt = parser.isoparse(lic['expires_at']).replace(tzinfo=None)
+            if expire_dt < now:
+                lic['is_expired'] = True
 
-        # Pobierz logi
-        logs = db.table("access_logs").select("*").order("created_at", desc=True).limit(50).execute().data
-        
-        return render_template('dashboard.html', licenses=licenses, logs=logs, admin_id=ADMIN_ID)
-    except Exception as e:
-        print(f"Błąd dashboardu: {e}")
-        return f"Wystąpił błąd podczas ładowania danych: {e}"
+    # 2. Pobierz logi (zwiększony limit dla wykresów)
+    logs_response = db.table("access_logs").select("*").order("created_at", desc=True).limit(200).execute().data
+    
+    # 3. Przygotowanie danych do wykresu (Ostatnie 24h)
+    chart_labels = []
+    chart_data = []
+    
+    # Grupujemy logi po godzinie
+    hours_hits = Counter()
+    for log in logs_response:
+        try:
+            # Parsowanie daty logu
+            log_time = parser.isoparse(log['created_at'])
+            # Formatowanie do "HH:00"
+            hour_key = log_time.strftime("%H:00")
+            hours_hits[hour_key] += 1
+        except:
+            continue
+
+    # Generujemy etykiety dla ostatnich 12h (żeby wykres był czytelny)
+    # Można zmienić na 24h
+    for i in range(11, -1, -1):
+        t = now - timedelta(hours=i)
+        key = t.strftime("%H:00")
+        chart_labels.append(key)
+        chart_data.append(hours_hits.get(key, 0))
+
+    # Tylko 50 ostatnich logów do tabeli, żeby nie śmiecić
+    table_logs = logs_response[:50]
+
+    return render_template(
+        'dashboard.html', 
+        licenses=licenses, 
+        logs=table_logs, 
+        admin_id=ADMIN_ID,
+        maintenance=MAINTENANCE_MODE,
+        chart_labels=json.dumps(chart_labels),
+        chart_data=json.dumps(chart_data)
+    )
+
+@app.route("/toggle_maintenance")
+@login_required
+def toggle_maintenance():
+    global MAINTENANCE_MODE
+    MAINTENANCE_MODE = not MAINTENANCE_MODE
+    status = "WŁĄCZONY" if MAINTENANCE_MODE else "WYŁĄCZONY"
+    flash(f"Tryb konserwacji (Kill Switch) został {status}.", "warning" if MAINTENANCE_MODE else "success")
+    return redirect(url_for("index"))
+
+@app.route("/export_active")
+@login_required
+def export_active():
+    """Eksportuje aktywne klucze do pliku TXT"""
+    licenses = db.table("licenses").select("license_key, license_type, note").eq("status", "active").execute().data
+    
+    output = "--- THUNDERT ACTIVE LICENSES ---\n"
+    output += f"Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}\n\n"
+    
+    for lic in licenses:
+        output += f"{lic['license_key']} | {lic['license_type']} | {lic['note']}\n"
+    
+    return Response(
+        output,
+        mimetype="text/plain",
+        headers={"Content-Disposition": "attachment;filename=active_keys.txt"}
+    )
 
 @app.route("/create", methods=["POST"])
 @login_required
@@ -120,19 +159,16 @@ def create_license():
         expires_at = (datetime.utcnow() + timedelta(days=days)).isoformat()
 
     new_key = str(uuid.uuid4()).upper()
-    
-    try:
-        db.table("licenses").insert({
-            "license_key": new_key,
-            "note": note,
-            "status": "active",
-            "license_type": l_type,
-            "expires_at": expires_at
-        }).execute()
-        flash(f'Utworzono: {l_type} ({duration} dni)', 'success')
-    except Exception as e:
-        flash(f'Błąd tworzenia licencji: {e}', 'error')
-        
+
+    db.table("licenses").insert({
+        "license_key": new_key,
+        "note": note,
+        "status": "active",
+        "license_type": l_type,
+        "expires_at": expires_at
+    }).execute()
+
+    flash(f'Utworzono: {l_type} ({duration} dni)', 'success')
     return redirect(url_for("index"))
 
 @app.route("/edit_license", methods=["POST"])
@@ -145,59 +181,52 @@ def edit_license():
     update_data = {"note": new_note}
 
     if extend_days and int(extend_days) > 0:
-        try:
-            current_lic = db.table("licenses").select("expires_at").eq("id", lic_id).single().execute()
-            current_expires = current_lic.data.get("expires_at")
-            
-            base_date = datetime.utcnow()
-            if current_expires:
-                parsed_date = parser.isoparse(current_expires).replace(tzinfo=None)
-                if parsed_date > base_date:
-                    base_date = parsed_date
-            
+        current_lic = db.table("licenses").select("expires_at").eq("id", lic_id).single().execute()
+        current_expires = current_lic.data.get("expires_at")
+
+        if current_expires:
+            base_date = parser.isoparse(current_expires)
+            if base_date.replace(tzinfo=None) < datetime.utcnow():
+                base_date = datetime.utcnow()
+
             new_date = base_date + timedelta(days=int(extend_days))
             update_data["expires_at"] = new_date.isoformat()
             update_data["status"] = "active"
-        except Exception as e:
-            print(f"Błąd edycji daty: {e}")
 
-    try:
-        db.table("licenses").update(update_data).eq("id", lic_id).execute()
-        flash('Zaktualizowano licencję.', 'success')
-    except Exception as e:
-        flash(f'Błąd zapisu: {e}', 'error')
-        
+    db.table("licenses").update(update_data).eq("id", lic_id).execute()
+    flash('Zaktualizowano licencję.', 'success')
     return redirect(url_for("index"))
 
 @app.route("/action/<action_type>/<int:id>", methods=["POST"])
 @login_required
 def license_action(action_type, id):
-    try:
-        if action_type == "delete":
-            db.table("licenses").delete().eq("id", id).execute()
-            flash('Usunięto licencję.', 'warning')
-        elif action_type == "ban":
-            db.table("licenses").update({"status": "banned"}).eq("id", id).execute()
-            flash('Zbanowano licencję.', 'danger')
-        elif action_type == "unban":
-            db.table("licenses").update({"status": "active"}).eq("id", id).execute()
-            flash('Odblokowano licencję.', 'success')
-        elif action_type == "reset_hwid":
-            db.table("licenses").update({"hwid": None}).eq("id", id).execute()
-            flash('Zresetowano HWID.', 'info')
-    except Exception as e:
-        flash(f"Błąd akcji: {e}", 'error')
+    if action_type == "delete":
+        db.table("licenses").delete().eq("id", id).execute()
+        flash('Usunięto licencję.', 'warning')
+    elif action_type == "ban":
+        db.table("licenses").update({"status": "banned"}).eq("id", id).execute()
+        flash('Zbanowano licencję.', 'danger')
+    elif action_type == "unban":
+        db.table("licenses").update({"status": "active"}).eq("id", id).execute()
+        flash('Odblokowano licencję.', 'success')
+    elif action_type == "reset_hwid":
+        db.table("licenses").update({"hwid": None}).eq("id", id).execute()
+        flash('Zresetowano HWID.', 'info')
 
     return redirect(url_for("index"))
 
-# --- API (Verification) ---
+# --- API (Verification Logic) ---
 
 @app.route("/api/verify", methods=["POST"])
 def verify_license():
-    if not db:
-        return jsonify({"valid": False, "message": "Server Error (DB)"}), 500
+    # 1. KILL SWITCH CHECK
+    if MAINTENANCE_MODE:
+        return jsonify({
+            "valid": False, 
+            "message": "⚠️ SYSTEM MAINTENANCE. Please wait."
+        }), 403
 
-    data = request.json or {}
+    data = request.json
     key = data.get("key")
     hwid = data.get("hwid")
     ip = request.remote_addr
@@ -205,49 +234,38 @@ def verify_license():
     if not key or not hwid:
         return jsonify({"valid": False, "message": "Brak danych"}), 400
 
-    try:
-        # 1. Pobierz licencję
-        res = db.table("licenses").select("*").eq("license_key", key).execute()
-        if not res.data:
-            log_security_event(key, ip, hwid, "Próba użycia nieistniejącego klucza", "warning")
-            return jsonify({"valid": False, "message": "Invalid Key"}), 403
-        
-        lic = res.data[0]
+    res = db.table("licenses").select("*").eq("license_key", key).execute()
+    if not res.data:
+        log_security_event(key, ip, hwid, "Próba użycia nieistniejącego klucza", "warning")
+        return jsonify({"valid": False, "message": "Invalid Key"}), 403
 
-        # 2. Sprawdź Status
-        if lic["status"] == "banned":
-            log_security_event(key, ip, hwid, "Próba użycia ZBANOWANEGO klucza", "warning")
-            return jsonify({"valid": False, "message": "License Banned"}), 403
+    lic = res.data[0]
 
-        # 3. Sprawdź Datę
-        if lic.get("expires_at"):
-            expire_dt = parser.isoparse(lic["expires_at"]).replace(tzinfo=None)
-            if expire_dt < datetime.utcnow():
-                if lic["status"] != "expired":
-                    db.table("licenses").update({"status": "expired"}).eq("id", lic["id"]).execute()
-                return jsonify({"valid": False, "message": "License Expired"}), 403
+    if lic["status"] == "banned":
+        log_security_event(key, ip, hwid, "Próba użycia ZBANOWANEGO klucza", "warning")
+        return jsonify({"valid": False, "message": "License Banned"}), 403
 
-        # 4. Sprawdź HWID
-        current_hwid = lic["hwid"]
-        
-        if current_hwid is None:
-            db.table("licenses").update({"hwid": hwid}).eq("id", lic["id"]).execute()
-            log_security_event(key, ip, hwid, "Aktywacja licencji (Nowy HWID)", "info")
-        
-        elif current_hwid != hwid:
-            log_security_event(key, ip, hwid, f"HWID Mismatch! Oczekiwano: {current_hwid}", "critical")
-            return jsonify({"valid": False, "message": "HWID Mismatch"}), 403
+    if lic.get("expires_at"):
+        expire_dt = parser.isoparse(lic["expires_at"]).replace(tzinfo=None)
+        if expire_dt < datetime.utcnow():
+            if lic["status"] != "expired":
+                db.table("licenses").update({"status": "expired"}).eq("id", lic["id"]).execute()
+            return jsonify({"valid": False, "message": "License Expired"}), 403
 
-        return jsonify({
-            "valid": True,
-            "type": lic["license_type"],
-            "expires": lic.get("expires_at"),
-            "message": "Access Granted"
-        }), 200
+    current_hwid = lic["hwid"]
+    if current_hwid is None:
+        db.table("licenses").update({"hwid": hwid}).eq("id", lic["id"]).execute()
+        log_security_event(key, ip, hwid, "Aktywacja licencji (Nowy HWID)", "info")
+    elif current_hwid != hwid:
+        log_security_event(key, ip, hwid, f"HWID Mismatch! Oczekiwano: {current_hwid}", "critical")
+        return jsonify({"valid": False, "message": "HWID Mismatch"}), 403
 
-    except Exception as e:
-        print(f"API Error: {e}")
-        return jsonify({"valid": False, "message": "Internal Server Error"}), 500
+    return jsonify({
+        "valid": True,
+        "type": lic["license_type"],
+        "expires": lic.get("expires_at"),
+        "message": "Access Granted"
+    }), 200
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
