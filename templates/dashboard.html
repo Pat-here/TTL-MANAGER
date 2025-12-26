@@ -1,159 +1,298 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <title>ThunderT Admin</title>
+    <title>ThunderT /// MANAGER</title>
     <meta charset="UTF-8">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background: #050505; color: #e0e0e0; font-family: 'Courier New', monospace; padding: 20px; }
-        .card { background: #111; border: 1px solid #333; margin-bottom: 20px; }
-        h1, h2, h5 { color: #FFD700; text-transform: uppercase; letter-spacing: 1px; }
-        .btn-gold { background: #FFD700; color: #000; border: none; font-weight: bold; }
-        .btn-gold:hover { background: #e6c200; }
+        /* CYBER / HACKER THEME */
+        :root {
+            --bg-color: #050505;
+            --panel-bg: #0a0a0a;
+            --border-color: #333;
+            --gold: #FFD700;
+            --gold-dim: #b39700;
+            --text-main: #e0e0e0;
+            --text-muted: #888;
+        }
 
-        /* Tables */
-        .table-dark { background-color: #111; --bs-table-bg: #111; border-color: #333; }
-        th { color: #FFD700 !important; border-bottom: 1px solid #FFD700 !important; }
+        body { 
+            background: var(--bg-color); 
+            color: var(--text-main); 
+            font-family: 'Courier New', monospace; 
+            padding: 20px; 
+        }
 
-        /* Badges */
-        .badge-basic { border: 1px solid #aaa; color: #aaa; }
-        .badge-pro { border: 1px solid #00c853; color: #00c853; }
-        .badge-enterprise { border: 1px solid #d500f9; color: #d500f9; box-shadow: 0 0 5px #d500f9; }
+        /* Karty i kontenery */
+        .card { 
+            background: var(--panel-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: 0;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+        }
+        
+        .card-header-gold {
+            border-bottom: 1px solid var(--gold);
+            color: var(--gold);
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
 
-        .status-active { color: #00c853; }
+        /* Przyciski */
+        .btn-gold { 
+            background: var(--gold); 
+            color: #000; 
+            border: none; 
+            font-weight: bold; 
+            text-transform: uppercase;
+            border-radius: 0;
+        }
+        .btn-gold:hover { background: var(--gold-dim); color: #000; }
+
+        .btn-outline-gold {
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            background: transparent;
+            border-radius: 0;
+        }
+        .btn-outline-gold:hover {
+            background: var(--gold);
+            color: black;
+        }
+
+        .btn-danger-glow {
+            background: transparent;
+            border: 1px solid #ff1744;
+            color: #ff1744;
+            box-shadow: 0 0 5px #ff1744;
+            border-radius: 0;
+        }
+        .btn-danger-glow:hover { background: #ff1744; color: white; }
+
+        /* Tabele */
+        .table-cyber { 
+            background-color: transparent; 
+            --bs-table-bg: transparent; 
+            border-color: var(--border-color); 
+            color: var(--text-main);
+        }
+        .table-cyber th { 
+            color: var(--gold) !important; 
+            border-bottom: 1px solid var(--gold) !important; 
+            font-weight: normal;
+            letter-spacing: 1px;
+        }
+        .table-cyber td {
+            border-bottom: 1px solid #222;
+            vertical-align: middle;
+        }
+
+        /* Statusy */
+        .status-active { color: #00c853; font-weight: bold; }
         .status-expired { color: #ff9800; }
         .status-banned { color: #ff1744; text-decoration: line-through; }
 
-        /* Logs */
-        .log-critical { background: rgba(255, 23, 68, 0.1); border-left: 3px solid #ff1744; }
-        .log-warning { border-left: 3px solid #ff9800; }
+        /* Tabs */
+        .nav-tabs { border-bottom: 1px solid var(--border-color); }
+        .nav-tabs .nav-link { 
+            color: var(--text-muted); 
+            border: none;
+            border-bottom: 2px solid transparent;
+            border-radius: 0;
+        }
+        .nav-tabs .nav-link.active { 
+            background-color: transparent; 
+            color: var(--gold); 
+            border-bottom: 2px solid var(--gold);
+        }
+        .nav-tabs .nav-link:hover { color: var(--gold); }
 
-        /* Nav Tabs */
-        .nav-tabs .nav-link { color: #888; border-color: #333; }
-        .nav-tabs .nav-link.active { background-color: #111; border-color: #FFD700; border-bottom-color: #111; color: #FFD700; }
+        /* Formularze */
+        .form-control, .form-select {
+            background: #111;
+            border: 1px solid #333;
+            color: var(--gold);
+            border-radius: 0;
+        }
+        .form-control:focus, .form-select:focus {
+            background: #111;
+            color: var(--gold);
+            border-color: var(--gold);
+            box-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
+        }
+
+        /* Kill Switch Alert */
+        .maintenance-alert {
+            border: 2px solid red;
+            background: rgba(255, 0, 0, 0.1);
+            color: red;
+            text-align: center;
+            padding: 15px;
+            font-weight: bold;
+            font-size: 1.2em;
+            text-transform: uppercase;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
     </style>
 </head>
 <body>
-    <div class="container-fluid" style="max-width: 1400px;">
-        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-3">
+    <div class="container-fluid" style="max-width: 1600px;">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-dark pb-3">
             <div>
-                <h1 class="mb-0">⚡ ThunderT <small class="text-muted fs-5">v2.0</small></h1>
-                <small class="text-muted">Admin: {{ admin_id }}</small>
+                <h1 class="mb-0" style="color: var(--gold); letter-spacing: 3px;">⚡ THUNDERT <span style="font-size:0.5em; color: #555;">MANAGER</span></h1>
+                <small class="text-muted">ADMIN_ID: <span class="text-white">{{ admin_id }}</span></small>
             </div>
-            <a href="/logout" class="btn btn-outline-secondary btn-sm">WYLOGUJ</a>
+            
+            <div class="d-flex gap-2">
+                <a href="/toggle_maintenance" class="btn {{ 'btn-danger' if maintenance else 'btn-outline-secondary' }} btn-sm" 
+                   onclick="return confirm('Czy na pewno chcesz zmienić status PRZERWY TECHNICZNEJ? Jeśli włączysz, nikt nie wejdzie do bota.')">
+                    {{ '⛔ ZAKOŃCZ PRZERWĘ' if maintenance else '🚨 PRZERWA TECHNICZNA' }}
+                </a>
+                
+                <a href="/logout" class="btn btn-outline-gold btn-sm">WYLOGUJ</a>
+            </div>
         </div>
+
+        {% if maintenance %}
+        <div class="maintenance-alert mb-4">
+            ⚠️ SYSTEM W TRYBIE KONSERWACJI (KILL SWITCH ACTIVE) - API ZWRACA BŁĘDY UŻYTKOWNIKOM ⚠️
+        </div>
+        {% endif %}
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} py-2">{{ message }}</div>
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} py-2 border-0 rounded-0" 
+                     style="background: {{ '#330000' if category == 'error' else '#003300' }}; color: {{ '#ff5555' if category == 'error' else '#55ff55' }}; border-left: 3px solid currentColor !important;">
+                    {{ message }}
+                </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
 
+        <div class="card p-3">
+            <div class="card-header-gold">
+                📊 Aktywność Weryfikacji (Ostatnie 12h)
+            </div>
+            <div style="height: 200px; width: 100%;">
+                <canvas id="activityChart"></canvas>
+            </div>
+        </div>
+
         <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
             <li class="nav-item">
-                <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button">ZARZĄDZANIE LICENCJAMI</button>
+                <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button">LICENCJE</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" type="button">LOGI BEZPIECZEŃSTWA 🚨</button>
+                <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" type="button">LOGI (LIVE)</button>
             </li>
         </ul>
 
         <div class="tab-content" id="myTabContent">
 
             <div class="tab-pane fade show active" id="home">
+                
                 <div class="card p-4">
-                    <h5>NOWA LICENCJA</h5>
+                    <div class="card-header-gold">GENERATOR NOWYCH DOSTĘPÓW</div>
                     <form action="/create" method="POST" class="row g-3 align-items-end">
                         <div class="col-md-3">
-                            <label class="text-muted small">Notatka</label>
-                            <input type="text" name="note" class="form-control bg-dark text-white border-secondary" placeholder="Dla kogo?" required>
+                            <label class="text-muted small">NOTATKA (Dla kogo?)</label>
+                            <input type="text" name="note" class="form-control" placeholder="np. Klient Discord" required>
                         </div>
                         <div class="col-md-2">
-                            <label class="text-muted small">Typ</label>
-                            <select name="license_type" class="form-select bg-dark text-white border-secondary">
+                            <label class="text-muted small">PAKIET</label>
+                            <select name="license_type" class="form-select">
                                 <option value="BASIC">BASIC</option>
                                 <option value="PRO" selected>PRO</option>
                                 <option value="ENTERPRISE">ENTERPRISE</option>
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label class="text-muted small">Czas trwania</label>
-                            <select name="duration" class="form-select bg-dark text-white border-secondary">
-                                <option value="30">30 Dni</option>
-                                <option value="90">90 Dni</option>
+                            <label class="text-muted small">CZAS</label>
+                            <select name="duration" class="form-select">
+                                <option value="7">7 Dni (Tydzień)</option> <option value="30" selected>30 Dni (Miesiąc)</option>
+                                <option value="90">90 Dni (Kwartał)</option>
                                 <option value="365">1 Rok</option>
                                 <option value="lifetime">LIFETIME</option>
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <button type="submit" class="btn btn-gold w-100">GENERUJ</button>
+                            <button type="submit" class="btn btn-gold w-100">STWÓRZ KLUCZ</button>
                         </div>
                     </form>
                 </div>
 
                 <div class="card p-3">
-                    <table class="table table-dark table-hover mb-0">
+                    <div class="d-flex justify-content-between mb-3">
+                        <h5 class="text-white mb-0">BAZA KLUCZY</h5>
+                        <a href="/export_active" class="btn btn-sm btn-outline-light">💾 EKSPORTUJ AKTYWNE (.TXT)</a>
+                    </div>
+                    
+                    <table class="table table-cyber table-hover mb-0">
                         <thead>
                             <tr>
                                 <th>KLUCZ</th>
                                 <th>TYP</th>
                                 <th>STATUS</th>
                                 <th>WYGASA</th>
-                                <th>HWID / NOTATKA</th>
-                                <th class="text-end">AKCJE</th>
+                                <th>HWID / INFO</th>
+                                <th class="text-end">PANEL</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for lic in licenses %}
-                            <tr>
-                                <td class="font-monospace text-white">{{ lic.license_key }}</td>
-                                <td>
-                                    <span class="badge badge-{{ lic.license_type.lower() }}">{{ lic.license_type }}</span>
-                                </td>
+                            <tr style="opacity: {{ '0.5' if lic.is_expired or lic.status == 'banned' else '1' }};">
+                                <td class="font-monospace" style="color: #fff;">{{ lic.license_key }}</td>
+                                <td><span class="badge border border-secondary text-secondary">{{ lic.license_type }}</span></td>
                                 <td>
                                     {% if lic.status == 'banned' %}
-                                        <span class="status-banned">BANNED</span>
+                                        <span class="status-banned">ZBANOWANY</span>
                                     {% elif lic.is_expired or lic.status == 'expired' %}
-                                        <span class="status-expired">EXPIRED</span>
+                                        <span class="status-expired">WYGASŁ</span>
                                     {% else %}
-                                        <span class="status-active">ACTIVE</span>
+                                        <span class="status-active">AKTYWNY</span>
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% if lic.expires_at %}
-                                        <small>{{ lic.expires_at[:10] }}</small>
+                                        <span class="{{ 'text-danger' if lic.is_expired else 'text-muted' }}">{{ lic.expires_at[:10] }}</span>
                                     {% else %}
-                                        ∞
+                                        <span class="text-gold">∞ LIFETIME</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <div class="small text-muted">{{ lic.hwid[:10] + '...' if lic.hwid else 'No HWID' }}</div>
-                                    <div class="small text-white">{{ lic.note }}</div>
+                                    <div class="small text-muted">{{ lic.hwid[:15] + '...' if lic.hwid else '---' }}</div>
+                                    <div class="small text-white fst-italic">{{ lic.note }}</div>
                                 </td>
                                 <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-primary me-1"
-                                            onclick="openEditModal('{{ lic.id }}', '{{ lic.note }}')">EDYCJA</button>
+                                    <button class="btn btn-sm btn-outline-primary me-1 rounded-0"
+                                            onclick="openEditModal('{{ lic.id }}', '{{ lic.note }}')">EDYTUJ</button>
 
                                     {% if lic.hwid %}
                                     <form action="/action/reset_hwid/{{ lic.id }}" method="POST" class="d-inline">
-                                        <button class="btn btn-sm btn-outline-info" title="Reset HWID">♻</button>
+                                        <button class="btn btn-sm btn-outline-info rounded-0" title="Reset HWID">♻</button>
                                     </form>
                                     {% endif %}
 
                                     {% if lic.status == 'banned' %}
                                     <form action="/action/unban/{{ lic.id }}" method="POST" class="d-inline">
-                                        <button class="btn btn-sm btn-outline-success">UNBAN</button>
+                                        <button class="btn btn-sm btn-outline-success rounded-0">UNBAN</button>
                                     </form>
                                     {% else %}
                                     <form action="/action/ban/{{ lic.id }}" method="POST" class="d-inline">
-                                        <button class="btn btn-sm btn-outline-warning">BAN</button>
+                                        <button class="btn btn-sm btn-outline-warning rounded-0">BAN</button>
                                     </form>
                                     {% endif %}
 
                                     <form action="/action/delete/{{ lic.id }}" method="POST" class="d-inline" onsubmit="return confirm('Usunąć?')">
-                                        <button class="btn btn-sm btn-outline-danger">X</button>
+                                        <button class="btn btn-sm btn-outline-danger rounded-0">X</button>
                                     </form>
                                 </td>
                             </tr>
@@ -165,27 +304,30 @@
 
             <div class="tab-pane fade" id="logs">
                 <div class="card p-3">
-                    <h5 class="text-danger mb-3">OSTATNIE ZDARZENIA BEZPIECZEŃSTWA</h5>
-                    <table class="table table-dark table-sm">
+                    <div class="card-header-gold text-danger">🚨 SECURITY LOGS (LAST 50)</div>
+                    <table class="table table-cyber table-sm">
                         <thead>
                             <tr>
                                 <th>CZAS</th>
-                                <th>SEVERITY</th>
-                                <th>WIADOMOŚĆ</th>
-                                <th>IP</th>
+                                <th>TYP</th>
+                                <th>KOMUNIKAT</th>
+                                <th>LOKALIZACJA (IP)</th>
                                 <th>KLUCZ</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for log in logs %}
-                            <tr class="log-{{ log.severity }}">
-                                <td class="text-muted">{{ log.created_at[:19] }}</td>
+                            <tr style="border-left: 3px solid {{ '#ff1744' if log.severity == 'critical' else 'transparent' }}">
+                                <td class="text-muted">{{ log.created_at[11:19] }}</td>
                                 <td class="text-uppercase fw-bold {{ 'text-danger' if log.severity == 'critical' else 'text-warning' }}">
                                     {{ log.severity }}
                                 </td>
-                                <td>{{ log.message }} <br> <small class="text-warning">HWID: {{ log.hwid_attempt }}</small></td>
-                                <td>{{ log.ip_address }}</td>
-                                <td class="font-monospace small">{{ log.license_key }}</td>
+                                <td>{{ log.message }} <br> <small class="text-muted">HWID: {{ log.hwid_attempt }}</small></td>
+                                <td>
+                                    <span class="ip-address" data-ip="{{ log.ip_address }}">{{ log.ip_address }}</span>
+                                    <span class="flag-container ms-2"></span> 
+                                </td>
+                                <td class="font-monospace small text-muted">{{ log.license_key }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -197,34 +339,31 @@
 
     <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
-            <div class="modal-content bg-dark border-secondary">
+            <div class="modal-content" style="background: #111; border: 1px solid #333; color: white;">
                 <div class="modal-header border-secondary">
                     <h5 class="modal-title text-gold">EDYCJA LICENCJI</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form action="/edit_license" method="POST">
                     <div class="modal-body">
                         <input type="hidden" name="id" id="edit_id">
-
                         <div class="mb-3">
-                            <label class="form-label text-muted">Edytuj Notatkę</label>
-                            <input type="text" name="note" id="edit_note" class="form-control bg-black text-white border-secondary">
+                            <label class="form-label text-muted">Notatka</label>
+                            <input type="text" name="note" id="edit_note" class="form-control">
                         </div>
-
                         <div class="mb-3">
-                            <label class="form-label text-muted">Przedłuż ważność o...</label>
-                            <select name="extend_days" class="form-select bg-black text-white border-secondary">
-                                <option value="0" selected>Nie przedłużaj</option>
+                            <label class="form-label text-muted">Przedłuż o...</label>
+                            <select name="extend_days" class="form-select">
+                                <option value="0" selected>Nie zmieniaj daty</option>
+                                <option value="7">+7 Dni</option>
                                 <option value="30">+30 Dni</option>
-                                <option value="90">+90 Dni</option>
                                 <option value="365">+1 Rok</option>
                             </select>
-                            <small class="text-muted">Wybierz, aby dodać dni do obecnej daty.</small>
                         </div>
                     </div>
                     <div class="modal-footer border-secondary">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn btn-gold">Zapisz Zmiany</button>
+                        <button type="button" class="btn btn-secondary rounded-0" data-bs-dismiss="modal">ANULUJ</button>
+                        <button type="submit" class="btn btn-gold rounded-0">ZAPISZ</button>
                     </div>
                 </form>
             </div>
@@ -232,6 +371,48 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        const chartData = JSON.parse('{{ chart_data | safe }}');
+        const chartLabels = JSON.parse('{{ chart_labels | safe }}');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: 'Weryfikacje licencji',
+                    data: chartData,
+                    borderColor: '#FFD700',
+                    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#222' },
+                        ticks: { color: '#666' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#666' }
+                    }
+                }
+            }
+        });
+    </script>
+
     <script>
         function openEditModal(id, note) {
             document.getElementById('edit_id').value = id;
@@ -240,6 +421,30 @@
             myModal.show();
         }
     </script>
-</body>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const ipElements = document.querySelectorAll('.ip-address');
+            // Limitujemy do 15, żeby nie zablokować API darmowego
+            const limit = Math.min(ipElements.length, 15);
+
+            for (let i = 0; i < limit; i++) {
+                const el = ipElements[i];
+                const ip = el.getAttribute('data-ip');
+                if(ip && ip !== '127.0.0.1') {
+                    fetch(`https://ipapi.co/${ip}/json/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if(data.country_code) {
+                                const flagUrl = `https://flagcdn.com/16x12/${data.country_code.toLowerCase()}.png`;
+                                const flagImg = `<img src="${flagUrl}" title="${data.country_name}">`;
+                                el.nextElementSibling.innerHTML = flagImg;
+                            }
+                        })
+                        .catch(err => console.log('Geo error', err));
+                }
+            }
+        });
+    </script>
+</body>
 </html>
