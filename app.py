@@ -26,6 +26,11 @@ db: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 MAINTENANCE_MODE = False
 MOTD_MESSAGE = "Access Granted"  # Domyślna wiadomość dla bota
 
+# --- ANTI-BRUTE FORCE CONFIG ---
+LOGIN_ATTEMPTS = {}  # {ip: {'count': 0, 'block_until': datetime}}
+MAX_FAILURES = 5
+BLOCK_TIME_MINUTES = 15
+
 # --- POMOCNIKI ---
 
 def get_real_ip():
@@ -61,11 +66,46 @@ def log_security_event(key, ip, hwid, msg, severity="info"):
 # --- ROUTY AUTORYZACJI ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    ip = get_real_ip()
+    now = datetime.utcnow()
+
+    # 1. Sprawdzenie czy IP jest zablokowane
+    if ip in LOGIN_ATTEMPTS:
+        attempt_data = LOGIN_ATTEMPTS[ip]
+        if attempt_data['block_until'] and now < attempt_data['block_until']:
+            # Oblicz ile minut zostało
+            time_left = attempt_data['block_until'] - now
+            minutes_left = int(time_left.total_seconds() // 60) + 1
+            flash(f'Zbyt wiele prób. IP zablokowane na {minutes_left} min.', 'error')
+            return render_template('login.html')
+        
+        # Jeśli czas minął, czyścimy blokadę
+        if attempt_data['block_until'] and now >= attempt_data['block_until']:
+            del LOGIN_ATTEMPTS[ip]
+
     if request.method == 'POST':
-        if request.form.get('password') == ADMIN_PASSWORD:
+        password = request.form.get('password')
+        
+        if password == ADMIN_PASSWORD:
             session['logged_in'] = True
+            # Reset licznika po udanym logowaniu
+            if ip in LOGIN_ATTEMPTS:
+                del LOGIN_ATTEMPTS[ip]
             return redirect(url_for('index'))
-        flash('Błędne hasło.', 'error')
+        else:
+            # Rejestracja nieudanej próby
+            if ip not in LOGIN_ATTEMPTS:
+                LOGIN_ATTEMPTS[ip] = {'count': 0, 'block_until': None}
+            
+            LOGIN_ATTEMPTS[ip]['count'] += 1
+            
+            if LOGIN_ATTEMPTS[ip]['count'] >= MAX_FAILURES:
+                LOGIN_ATTEMPTS[ip]['block_until'] = now + timedelta(minutes=BLOCK_TIME_MINUTES)
+                flash(f'Zablokowano dostęp na {BLOCK_TIME_MINUTES} minut.', 'error')
+            else:
+                remaining = MAX_FAILURES - LOGIN_ATTEMPTS[ip]['count']
+                flash(f'Błędne hasło. Pozostało prób: {remaining}', 'error')
+
     return render_template('login.html')
 
 @app.route('/logout')
@@ -265,8 +305,6 @@ def verify_license():
         log_security_event(key, ip, hwid, f"HWID Mismatch! Oczekiwano: {current_hwid}", "critical")
         return jsonify({"valid": False, "message": "HWID Mismatch"}), 403
 
-    # TU DZIEJE SIĘ MAGIA MOTD
-    # Zwracamy naszą globalną wiadomość zamiast sztywnego tekstu
     return jsonify({
         "valid": True,
         "type": lic["license_type"],
