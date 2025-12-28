@@ -57,7 +57,6 @@
             box-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
             outline: none;
         }
-        /* Placeholder color */
         ::placeholder { color: #444 !important; opacity: 1; }
 
         /* Przyciski */
@@ -89,7 +88,7 @@
             background-color: transparent; 
             --bs-table-bg: transparent; 
             border-color: var(--border-color); 
-            color: var(--text-main);
+            color: #ffffff !important; /* Wymuszona biel dla lepszej widoczności */
         }
         .table-cyber th { 
             color: var(--gold) !important; 
@@ -101,11 +100,35 @@
         .table-cyber td {
             border-bottom: 1px solid #222;
             vertical-align: middle;
+            font-weight: 500; /* Nieco grubsza czcionka */
+        }
+
+        /* --- STYLE BADGE DLA LICENCJI --- */
+        .badge-lic {
+            padding: 6px 12px;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+        .badge-basic {
+            background-color: #6c757d; /* Szary */
+            color: #fff;
+            box-shadow: 0 0 5px rgba(108, 117, 125, 0.4);
+        }
+        .badge-pro {
+            background-color: #00e676; /* Jasny Zielony */
+            color: #000;
+            box-shadow: 0 0 8px rgba(0, 230, 118, 0.4);
+        }
+        .badge-ent {
+            background: linear-gradient(45deg, #7c4dff, #d500f9); /* Fiolet */
+            color: #fff;
+            box-shadow: 0 0 8px rgba(213, 0, 249, 0.4);
         }
 
         /* Statusy */
-        .status-active { color: #00c853; font-weight: bold; text-shadow: 0 0 5px rgba(0, 200, 83, 0.3); }
-        .status-expired { color: #ff9800; }
+        .status-active { color: #00e676; font-weight: bold; text-shadow: 0 0 5px rgba(0, 230, 118, 0.3); }
+        .status-expired { color: #ff9100; font-weight: bold; }
         .status-banned { color: #ff1744; text-decoration: line-through; }
 
         /* Tabs */
@@ -140,13 +163,22 @@
         @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
 
         .online-counter { 
-            color: #00c853; 
+            color: #00e676; 
             font-weight: bold; 
-            border: 1px solid #00c853; 
+            border: 1px solid #00e676; 
             padding: 4px 10px; 
             font-size: 0.9em; 
-            box-shadow: 0 0 5px rgba(0, 200, 83, 0.2); 
+            box-shadow: 0 0 5px rgba(0, 230, 118, 0.2); 
             display: inline-block;
+        }
+        
+        .key-display {
+            font-family: 'Consolas', monospace;
+            color: #fff;
+            background: #1a1a1a;
+            padding: 2px 6px;
+            border-radius: 3px;
+            letter-spacing: 1px;
         }
     </style>
 </head>
@@ -156,7 +188,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-dark pb-3">
             <div>
                 <h1 class="mb-0" style="color: var(--gold); letter-spacing: 3px; font-weight: 800;">
-                    ⚡ THUNDERT <span style="font-size:0.5em; color: #555; font-weight: normal;">MANAGER v2.1</span>
+                    ⚡ THUNDERT <span style="font-size:0.5em; color: #555; font-weight: normal;">MANAGER v2.2</span>
                 </h1>
                 <div class="mt-2 d-flex align-items-center gap-3">
                     <span class="text-muted small">ADMIN_ID: <span class="text-white">{{ admin_id }}</span></span>
@@ -289,8 +321,16 @@
                             <tbody>
                                 {% for lic in licenses %}
                                 <tr class="license-row" style="opacity: {{ '0.5' if lic.is_expired or lic.status == 'banned' else '1' }};">
-                                    <td class="font-monospace" style="color: #fff; letter-spacing: 1px;">{{ lic.license_key }}</td>
-                                    <td><span class="badge border border-secondary text-secondary">{{ lic.license_type }}</span></td>
+                                    <td><span class="key-display">{{ lic.license_key }}</span></td>
+                                    <td>
+                                        {% if 'ENTERPRISE' in lic.license_type or 'Enterprise' in lic.license_type %}
+                                            <span class="badge badge-lic badge-ent">{{ lic.license_type }}</span>
+                                        {% elif 'PRO' in lic.license_type or 'Pro' in lic.license_type %}
+                                            <span class="badge badge-lic badge-pro">{{ lic.license_type }}</span>
+                                        {% else %}
+                                            <span class="badge badge-lic badge-basic">{{ lic.license_type }}</span>
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         {% if lic.status == 'banned' %}
                                             <span class="status-banned">ZBANOWANY</span>
@@ -302,7 +342,7 @@
                                     </td>
                                     <td>
                                         {% if lic.expires_at %}
-                                            <span class="{{ 'text-danger' if lic.is_expired else 'text-muted' }}">{{ lic.expires_at[:10] }}</span>
+                                            <span class="{{ 'text-danger' if lic.is_expired else 'text-white' }}">{{ lic.expires_at[:10] }}</span>
                                         {% else %}
                                             <span class="text-gold">∞ LIFETIME</span>
                                         {% endif %}
@@ -500,7 +540,6 @@
             
             rows.forEach(row => {
                 let text = row.innerText.toUpperCase();
-                // Jeśli tekst wiersza zawiera frazę -> pokaż, w przeciwnym razie -> ukryj
                 row.style.display = text.indexOf(filter) > -1 ? "" : "none";
             });
         });
