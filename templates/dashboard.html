@@ -399,16 +399,16 @@
                         <tbody>
                             {% for log in logs %}
                             <tr style="border-left: 3px solid {{ '#ff1744' if log.severity == 'critical' else 'transparent' }}">
-                                <td class="text-muted font-monospace">{{ log.created_at[11:19] }}</td>
+                                <td class="text-white font-monospace">{{ log.created_at[11:19] }}</td>
                                 <td class="text-uppercase fw-bold {{ 'text-danger' if log.severity == 'critical' else 'text-warning' }}">
                                     {{ log.severity }}
                                 </td>
-                                <td>{{ log.message }} <br> <small class="text-muted font-monospace">HWID: {{ log.hwid_attempt }}</small></td>
+                                <td>{{ log.message }} <br> <small class="text-white font-monospace">HWID: {{ log.hwid_attempt }}</small></td>
                                 <td>
                                     <span class="ip-address text-white" data-ip="{{ log.ip_address }}">{{ log.ip_address }}</span>
                                     <span class="flag-container ms-2"></span> 
                                 </td>
-                                <td class="font-monospace small text-muted">{{ log.license_key }}</td>
+                                <td class="font-monospace small text-white">{{ log.license_key }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -546,4 +546,5 @@
     </script>
 </body>
 </html>
+
 
