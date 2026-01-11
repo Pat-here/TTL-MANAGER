@@ -73,13 +73,11 @@ def login():
     if ip in LOGIN_ATTEMPTS:
         attempt_data = LOGIN_ATTEMPTS[ip]
         if attempt_data['block_until'] and now < attempt_data['block_until']:
-            # Oblicz ile minut zostało
             time_left = attempt_data['block_until'] - now
             minutes_left = int(time_left.total_seconds() // 60) + 1
             flash(f'Zbyt wiele prób. IP zablokowane na {minutes_left} min.', 'error')
             return render_template('login.html')
         
-        # Jeśli czas minął, czyścimy blokadę
         if attempt_data['block_until'] and now >= attempt_data['block_until']:
             del LOGIN_ATTEMPTS[ip]
 
@@ -88,12 +86,10 @@ def login():
         
         if password == ADMIN_PASSWORD:
             session['logged_in'] = True
-            # Reset licznika po udanym logowaniu
             if ip in LOGIN_ATTEMPTS:
                 del LOGIN_ATTEMPTS[ip]
             return redirect(url_for('index'))
         else:
-            # Rejestracja nieudanej próby
             if ip not in LOGIN_ATTEMPTS:
                 LOGIN_ATTEMPTS[ip] = {'count': 0, 'block_until': None}
             
@@ -118,9 +114,9 @@ def logout():
 @app.route("/")
 @login_required
 def index():
+    # Pobieranie licencji
     licenses = db.table("licenses").select("*").order("created_at", desc=True).execute().data
     
-    # Przetwarzanie dat
     now = datetime.utcnow()
     for lic in licenses:
         lic['is_expired'] = False
@@ -129,14 +125,12 @@ def index():
             if expire_dt < now:
                 lic['is_expired'] = True
 
-    # Logi
+    # Pobieranie logów
     logs_response = db.table("access_logs").select("*").order("created_at", desc=True).limit(200).execute().data
     
-    # 1. Obliczanie ONLINE USERS (unikalne HWID w ostatnich 5 minutach)
     online_users = set()
     five_mins_ago = now - timedelta(minutes=5)
     
-    # 2. Dane do wykresu
     chart_labels = []
     chart_data = []
     hours_hits = Counter()
@@ -145,12 +139,10 @@ def index():
         try:
             log_time = parser.isoparse(log['created_at']).replace(tzinfo=None)
             
-            # Logika Online Users
             if log_time > five_mins_ago:
                 if log['hwid_attempt']:
                     online_users.add(log['hwid_attempt'])
 
-            # Logika Wykresu
             hour_key = log_time.strftime("%H:00")
             hours_hits[hour_key] += 1
         except:
@@ -221,7 +213,9 @@ def create_license():
         "note": note,
         "status": "active",
         "license_type": l_type,
-        "expires_at": expires_at
+        "expires_at": expires_at,
+        "hwid": None,       # Reset HWID
+        "fingerprint": None # Reset Fingerprint
     }).execute()
 
     flash(f'Utworzono: {l_type}', 'success')
@@ -260,10 +254,13 @@ def license_action(action_type, id):
     elif action_type == "unban":
         db.table("licenses").update({"status": "active"}).eq("id", id).execute()
     elif action_type == "reset_hwid":
-        db.table("licenses").update({"hwid": None}).eq("id", id).execute()
+        # Resetujemy ZARÓWNO stary HWID jak i nowy Fingerprint
+        db.table("licenses").update({"hwid": None, "fingerprint": None}).eq("id", id).execute()
+        flash("Zresetowano HWID i Fingerprint.", "success")
+        
     return redirect(url_for("index"))
 
-# --- API ---
+# --- API ENDPOINTS ---
 
 @app.route("/api/verify", methods=["POST"])
 def verify_license():
@@ -275,6 +272,7 @@ def verify_license():
     data = request.json
     key = data.get("key")
     hwid = data.get("hwid")
+    fingerprint = data.get("fingerprint") # Nowy Strong HWID
 
     if not key or not hwid:
         return jsonify({"valid": False, "message": "Brak danych"}), 400
@@ -286,10 +284,12 @@ def verify_license():
 
     lic = res.data[0]
 
+    # Sprawdzenie bana
     if lic["status"] == "banned":
-        log_security_event(key, ip, hwid, "Zbanowany klucz", "critical")
+        log_security_event(key, ip, hwid, "Próba użycia zbanowanego klucza", "critical")
         return jsonify({"valid": False, "message": "License Banned"}), 403
 
+    # Sprawdzenie wygaśnięcia
     if lic.get("expires_at"):
         expire_dt = parser.isoparse(lic["expires_at"]).replace(tzinfo=None)
         if expire_dt < datetime.utcnow():
@@ -297,13 +297,38 @@ def verify_license():
                 db.table("licenses").update({"status": "expired"}).eq("id", lic["id"]).execute()
             return jsonify({"valid": False, "message": "License Expired"}), 403
 
-    current_hwid = lic["hwid"]
+    # --- WERYFIKACJA SPRZĘTOWA ---
+    
+    current_hwid = lic.get("hwid")
+    current_fingerprint = lic.get("fingerprint")
+    
+    update_data = {}
+    security_breach = False
+
+    # 1. Weryfikacja Legacy HWID (wmic)
     if current_hwid is None:
-        db.table("licenses").update({"hwid": hwid}).eq("id", lic["id"]).execute()
-        log_security_event(key, ip, hwid, "Aktywacja (Nowy HWID)", "info")
+        # Pierwsze użycie - przypisujemy HWID
+        update_data["hwid"] = hwid
     elif current_hwid != hwid:
-        log_security_event(key, ip, hwid, f"HWID Mismatch! Oczekiwano: {current_hwid}", "critical")
+        log_security_event(key, ip, hwid, f"HWID Mismatch (Legacy)! Oczekiwano: {current_hwid}", "critical")
         return jsonify({"valid": False, "message": "HWID Mismatch"}), 403
+
+    # 2. Weryfikacja Strong Fingerprint (Anti-Spoof/Anti-Clone)
+    if fingerprint: # Jeśli klient wysyła fingerprint (v1.3+)
+        if current_fingerprint is None:
+            # Użytkownik zaktualizował bota - przypisujemy fingerprint
+            update_data["fingerprint"] = fingerprint
+            log_security_event(key, ip, hwid, "Migracja do Strong HWID (v1.3)", "info")
+        elif current_fingerprint != fingerprint:
+            # HWID (wmic) się zgadza, ale Fingerprint NIE -> Spoofing/Klonowanie
+            log_security_event(key, ip, hwid, "STRONG FINGERPRINT MISMATCH (Clone Detected!)", "critical")
+            return jsonify({"valid": False, "message": "Security Error: Environment Changed (Spoof/Clone)"}), 403
+
+    # Zapis zmian w bazie (przypisanie HWID/Fingerprint)
+    if update_data:
+        db.table("licenses").update(update_data).eq("id", lic["id"]).execute()
+        if "hwid" in update_data and current_hwid is None:
+            log_security_event(key, ip, hwid, "Aktywacja (Nowy HWID)", "info")
 
     return jsonify({
         "valid": True,
@@ -311,6 +336,40 @@ def verify_license():
         "expires": lic.get("expires_at"),
         "message": MOTD_MESSAGE 
     }), 200
+
+# --- NOWY ENDPOINT: SECURITY REPORT ---
+@app.route("/api/report", methods=["POST"])
+def security_report():
+    """
+    Odbiera ciche alarmy od klientów (Logic Bomb, wykrycie VM, cracka).
+    """
+    data = request.json
+    hwid = data.get("hwid", "UNKNOWN")
+    pc_user = data.get("pc_user", "UNKNOWN")
+    reason = data.get("reason", "UNKNOWN_REASON")
+    
+    # Próbujemy znaleźć klucz po HWID, żeby wiedzieć kto to
+    # (To opcjonalne, ale pomaga namierzyć klienta)
+    license_key = "UNKNOWN_KEY"
+    try:
+        res = db.table("licenses").select("license_key").eq("hwid", hwid).limit(1).execute()
+        if res.data:
+            license_key = res.data[0]['license_key']
+    except:
+        pass
+
+    msg = f"SECURITY ALERT: {reason} | User: {pc_user}"
+    ip = get_real_ip()
+    
+    # Logujemy jako CRITICAL
+    log_security_event(license_key, ip, hwid, msg, "critical")
+    
+    # Opcjonalnie: Automatyczny ban licencji przy wykryciu cracka
+    # if "TAMPERING" in reason or "CRACK" in reason:
+    #     if license_key != "UNKNOWN_KEY":
+    #         db.table("licenses").update({"status": "banned"}).eq("license_key", license_key).execute()
+
+    return jsonify({"status": "received"}), 200
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
